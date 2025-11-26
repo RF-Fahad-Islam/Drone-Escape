@@ -28,16 +28,12 @@ Your goal: **Fly as far as you can and get the highest score!**
 
 ### ⚡ **Power-Ups**
 
--   **Speed Boost** --- temporarily increases game speed for bonus points
-
 -   **Shield** --- protects you from one collision\
     (More can be added easily)
 
 ### 🚧 **Obstacles**
 
--   Randomly placed static or moving hazards
-
--   Each obstacle has its own behavior and speed pattern
+-   Fire shoot
 
 ### 🔊 **Sound Effects**
 

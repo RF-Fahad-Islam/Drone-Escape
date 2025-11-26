@@ -3,7 +3,7 @@ import os
 import random
 from sprites.drone import Drone
 from sprites.pipe import Pipe
-from sprites.power import PowerUp
+from power import PowerUp
 from sprites.obstacle import Obstacle
 import os 
 
@@ -28,6 +28,7 @@ class Game:
         self.fps =60
         self.is_started = False
         self.hiscore = 0
+        self.collision_skip = 0
         # Game Constant Variables
         self.jump_speed = 700
         self.ground_speed= -300
@@ -49,9 +50,9 @@ class Game:
         self.SPAWN_PIPE_TIMER = 1400
         self.SPAWN_POWER = pg.USEREVENT + 2 
         self.SPAWN_OBS = pg.USEREVENT + 3
-        pg.time.set_timer(self.SPAWN_POWER, 3000)
+        pg.time.set_timer(self.SPAWN_POWER, random.randint(2000,10000))
         pg.time.set_timer(self.SPAWN_PIPE, self.SPAWN_PIPE_TIMER) 
-        pg.time.set_timer(self.SPAWN_OBS, 4000) 
+        pg.time.set_timer(self.SPAWN_OBS, random.randint(2000,7000)) 
         self.game_initial_values()
     
     def welcome_screen(self):
@@ -102,7 +103,7 @@ class Game:
         text1 = font_big.render("GAME OVER", True, (255, 50, 50))
         rect1 = text1.get_rect(center=(self.screen.get_width()//2, 200))
         self.screen.blit(text1, rect1)
-
+        self.score = int(self.score)
         # Score text
         text2 = font_medium.render(f"Score: {score}", True, (255, 255, 255))
         rect2 = text2.get_rect(center=(self.screen.get_width()//2, 280))
@@ -116,6 +117,8 @@ class Game:
         text4 = font_medium.render("Press SPACE to Restart", True, (180, 180, 180))
         rect4 = text4.get_rect(center=(self.screen.get_width()//2, 350))
         self.screen.blit(text4, rect4)
+        
+        self.score_manager(score=int(score))
 
     def score_manager(self, score=None):
         self.hiscore = 0
@@ -150,8 +153,8 @@ class Game:
                 pg.time.set_timer(self.SPAWN_PIPE, self.SPAWN_PIPE_TIMER) 
                 point_sound.play()
                 
-        sc = font_big.render(f"        {int(self.score)}", True, (255, 255, 255))
-        rect2 = sc.get_rect(topleft=(5,5))
+        sc = font_big.render(f"{int(self.score)}", True, (255, 255, 255))
+        rect2 = sc.get_rect(topright=(self.width-10,40))
         self.screen.blit(sc, rect2)
     
     def start(self):
@@ -174,7 +177,8 @@ class Game:
         self.all_sprites.draw(self.screen)
         self.screen.blit(self.ground_img1,self.ground_rect)
         self.screen.blit(self.ground_img2,self.ground_rect2)
-        
+        t = font_medium.render(f")x{self.collision_skip}", True, (255, 255, 255))
+        self.screen.blit(t,(self.width-50,10))
     def updateEverything(self,dt):
          # Update Sprites
         for pipe in self.pipes:
@@ -199,25 +203,43 @@ class Game:
         
     def handleCollisions(self):
         if pg.sprite.spritecollide(self.drone_group.sprite, self.pipes, False):
+            if self.collision_skip>0:
+                self.collision_skip -= 1    
+                return
             self.gravity = 0
             self.ground_speed = 0
             self.is_flap = False
             self.game_over = True
+            self.collision_skip = 0
             hit_sound.play()
             
-        if pg.sprite.spritecollide(self.drone_group.sprite, self.powers, True):
-            self.score += 5  # Increase score by 5 for collecting power-up
+        hits = pg.sprite.spritecollide(self.drone_group.sprite, self.powers, True) 
+        if hits and self.collision_skip==0:
+            for power in hits:
+                if power.type == "speed":
+                    self.score += 5  # Increase score by 5 for collecting power-up
+                elif power.type == "shield":
+                    self.collision_skip = 1
+            
             point_sound.play()
 
         if pg.sprite.spritecollide(self.drone_group.sprite, self.obs, False):
+            if self.collision_skip>0:
+                self.collision_skip -= 1
+                return
             self.gravity = 0
             self.ground_speed = 0
             self.is_flap = False
             self.game_over = True
+            self.collision_skip = 0
             hit_sound.play()
         
         if (self.drone.rect.bottom >= 740 or self.drone.rect.top <= 0) and not self.game_over:
+            if self.collision_skip>0:
+                self.collision_skip -= 1
+                return
             self.game_over = True
+            self.collision_skip = 0
             hit_sound.play()
     
     def gameloop(self):
@@ -255,7 +277,7 @@ class Game:
                 
                 #Power Up
                 if event.type == self.SPAWN_POWER and not self.game_over:
-                    self.power = PowerUp(self.screen, random .randint(self.width+50,self.width+300), random.randint(100,500), 0.25, random.choice(["speed","shield"]))
+                    self.power = PowerUp(self.screen, random.randint(self.width+50,self.width+300), random.randint(100,500), 0.25, random.choice(["speed","shield"]))
                     self.all_sprites.add(self.power)
                     self.powers.add(self.power)
                 
@@ -289,8 +311,8 @@ class Game:
                         
                 self.run_ground(dt)
                 self.drone.run(dt)
-                self.show_score()
                 self.drawAll() 
+                self.show_score()
                 pg.display.update()
                 self.clock.tick(self.fps)
             

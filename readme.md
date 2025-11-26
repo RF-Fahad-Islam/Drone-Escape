@@ -103,7 +103,7 @@ Your goal: **Fly as far as you can and get the highest score!**
 
 ### **2. Run the game**
 
-`python main.py`
+`python game.py`
 
 * * * * *
 

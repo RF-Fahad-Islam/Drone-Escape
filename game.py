@@ -1,0 +1,212 @@
+import pygame as pg
+import os
+import random
+from sprites.bird import Bird
+from sprites.pipe import Pipe
+import pygame.mixer
+pg.init()
+pg.mixer.init()
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) 
+ASSETS = os.path.join(SCRIPT_DIR, 'assets')
+flap_sound = pg.mixer.Sound(os.path.join(ASSETS, "sfx/flap.wav"))
+point_sound = pg.mixer.Sound(os.path.join(ASSETS, "sfx/score.wav"))
+hit_sound = pg.mixer.Sound(os.path.join(ASSETS, "sfx/dead.wav"))
+font_big = pg.font.Font(os.path.join(ASSETS,'font.ttf'), 50)
+font_medium = pg.font.Font(os.path.join(ASSETS,'font.ttf'), 20)
+
+class Game:
+    def __init__(self):
+        # Initialize Screen
+        self.width =600
+        self.height = 950
+        self.screen = pg.display.set_mode((self.width,self.height))
+        self.scale_factor = 1.5
+        self.clock = pg.time.Clock()
+        self.fps =60
+        self.is_started = False
+        # Game Constant Variables
+        self.jump_speed = 700
+        self.ground_speed= -300
+        self.gravity = 100
+        self.setupBgandGround()
+        # Initialize Bird
+        self.bird = Bird(self.screen, self.gravity, self.jump_speed, self.scale_factor)
+        self.is_flap = True
+        self.bird_group = pg.sprite.GroupSingle()
+        self.bird_group.add(self.bird)
+        self.all_sprites = pg.sprite.Group()
+        self.all_sprites.add(self.bird)
+        # Initialize Pipes
+        self.pipes = pg.sprite.Group()
+        self.SPAWN_PIPE = pg.USEREVENT + 1
+        self.SPAWN_PIPE_TIMER = 1400
+        pg.time.set_timer(self.SPAWN_PIPE, self.SPAWN_PIPE_TIMER) 
+        self.game_initial_values()
+    
+    def welcome_screen(self):
+        
+        # Game title
+        title = font_big.render("FLAPPY BIRD", True, (255, 255, 0))
+        title_rect = title.get_rect(center=(self.width//2, self.height//3))
+        self.screen.blit(title, title_rect)
+        
+        # Instruction
+        instr = font_medium.render("Press SPACE to Start", True, (255, 255, 255))
+        instr_rect = instr.get_rect(center=(self.width//2, self.height//2))
+        self.screen.blit(instr, instr_rect)
+        
+        pg.display.update()
+
+    
+    def game_initial_values(self):
+        #To start new game and initialize values
+        self.bird.rect = self.bird.image.get_rect(center=(self.screen.get_width()/10, self.screen.get_height()/2))
+        self.bird.velocity_y = 0
+        self.pipes.empty()
+        self.pipe_gap = 200
+        self.game_over = False
+        self.min_pipe_gap = 120
+        self.is_flap = True
+        self.is_started = False
+        self.score = 0
+    
+    def setupBgandGround(self):
+        # Initialize Background
+        bg_img_load = pg.image.load(os.path.join(ASSETS,'bg.png')).convert()
+        self.bg_img = pg.transform.scale_by(bg_img_load, self.scale_factor)
+        self.running = True
+        # Initialize Ground
+        self.ground_img1 = pg.transform.scale_by(pg.image.load(os.path.join(ASSETS,'ground.png')).convert(),self.scale_factor)
+        self.ground_img2 = pg.transform.scale_by(pg.image.load(os.path.join(ASSETS,'ground.png')).convert(),self.scale_factor)
+        self.ground_rect = self.ground_img1.get_rect()
+        self.ground_rect2 = self.ground_img2.get_rect()
+        self.ground_rect.x = 0
+        self.ground_rect.y, self.ground_rect2.y = 750,750
+    
+    def game_over_screen(self, score):
+        self.screen.fill((0, 0, 0))
+
+        # Main "GAME OVER" title
+        text1 = font_big.render("GAME OVER", True, (255, 50, 50))
+        rect1 = text1.get_rect(center=(self.screen.get_width()//2, 200))
+        self.screen.blit(text1, rect1)
+
+        # Score text
+        text2 = font_medium.render(f"Score: {score}", True, (255, 255, 255))
+        rect2 = text2.get_rect(center=(self.screen.get_width()//2, 280))
+        self.screen.blit(text2, rect2)
+
+        # Restart instruction
+        text3 = font_medium.render("Press SPACE to Restart", True, (180, 180, 180))
+        rect3 = text3.get_rect(center=(self.screen.get_width()//2, 350))
+        self.screen.blit(text3, rect3)
+
+    
+    def show_score(self):
+        # Score text
+        sc = font_big.render(f"Score: {int(self.score)}", True, (255, 255, 255))
+        rect2 = sc.get_rect(topleft=(5,5))
+        self.screen.blit(sc, rect2)
+    
+    def start(self):
+        # Start Game Loop
+        pg.display.set_caption("Flappy Bird - By Fahad")
+        self.gameloop()
+    
+    def run_ground(self,dt):
+            self.ground_rect.x += int(self.ground_speed*dt)
+            self.ground_rect2.x = self.ground_rect.right
+            if abs(self.ground_rect.x) > self.screen.get_width():
+                self.ground_rect.x = 0
+
+    def reset(self):
+        self.game_initial_values()
+        pg.display.update()
+        
+    
+    def drawAll(self):
+        self.all_sprites.draw(self.screen)
+        self.screen.blit(self.ground_img1,self.ground_rect)
+        self.screen.blit(self.ground_img2,self.ground_rect2)
+        
+    def gameloop(self):
+        while self.running:
+            self.screen.blit(self.bg_img,(0,-200))
+            dt = self.clock.get_time()/1000
+            keys = pg.key.get_pressed()
+            if not self.is_started:
+                self.gravity = 0
+                self.welcome_screen()
+                if keys[pg.K_SPACE]:
+                    self.is_started = True
+            else:
+                self.gravity = 100
+            # Event Handling
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    self.running = False
+                    pg.quit()
+                    quit()
+                    
+                # Spawn Pipes
+                if event.type == self.SPAWN_PIPE and not self.game_over:
+                    self.pipe = Pipe(self.screen, self.width+50, random.randint(300,600), self.scale_factor, False)
+                    self.pipe_flipped = Pipe(self.screen, self.width+50, self.pipe.rect.y - self.pipe_gap-self.pipe.rect.height, self.scale_factor, True)
+                    self.pipes.add(self.pipe)
+                    self.pipes.add(self.pipe_flipped)
+                    # add the two pipe sprites directly to the all_sprites group
+                    self.all_sprites.add(self.pipe, self.pipe_flipped)
+                    self.pipe_gap-=10
+                    self.pipe_gap = max(self.min_pipe_gap,self.pipe_gap)
+                    self.ground_speed -= 10
+                if event.type == pg.KEYDOWN and event.key == pg.K_SPACE and not self.game_over and self.is_flap:
+                    flap_sound.play()
+                    self.bird.flap(dt)
+                    
+            if self.game_over and self.is_started:
+                pg.time.set_timer(self.SPAWN_PIPE, 0)
+                self.game_over_screen(score=self.score)
+                pg.display.update()
+                keys = pg.key.get_pressed()
+                if keys[pg.K_SPACE]:
+                    self.running = False
+                    Game().start()
+                    
+            elif not self.game_over and self.is_started:
+                
+                for pipe in self.pipes:
+                    pipe.update(dt,self.ground_speed)
+                    if pipe.rect.right < 0:
+                        pipe.kill()
+                        self.all_sprites.remove(pipe)
+                    
+                if pg.sprite.spritecollide(self.bird_group.sprite, self.pipes, False):
+                    self.gravity = 0
+                    self.ground_speed = 0
+                    self.is_flap = False
+                    self.game_over = True
+                    hit_sound.play()
+
+                if (self.bird.rect.bottom >= 750 or self.bird.rect.top <= 0) and not self.game_over:
+                    self.game_over = True
+                    hit_sound.play()
+                
+                for pipe in self.pipes:
+                    if pipe.rect.left+5 < self.bird.rect.right and not self.game_over and not pipe.scored:
+                        self.score += 0.5  # Increment score by 0.5 for each pipe passed
+                        pipe.scored = True
+                        self.SPAWN_PIPE_TIMER-=100
+                        self.SPAWN_PIPE_TIMER = max(900,self.SPAWN_PIPE_TIMER)
+                        
+                        pg.time.set_timer(self.SPAWN_PIPE, self.SPAWN_PIPE_TIMER) 
+                        point_sound.play()
+                        
+                self.run_ground(dt)
+                self.bird.run(dt)
+                self.drawAll() 
+                self.show_score()
+                pg.display.update()
+                self.clock.tick(self.fps)
+            
+game = Game()
+game.start()

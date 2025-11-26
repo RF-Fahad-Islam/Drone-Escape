@@ -28,7 +28,7 @@ Your goal: **Fly as far as you can and get the highest score!**
 
 *   **Speed Boost** — temporarily increases game speed for bonus points
     
-*   **Shield** — protects you from one collision(More can be added easily)(Will be added)
+*   **Shield** — protects you from one collision(More can be added easily)
     
 
 ### 🚧 **Obstacles**
@@ -66,22 +66,6 @@ Your goal: **Fly as far as you can and get the highest score!**
 *   **Game Over Screen** — Press SPACE to restart
     
 
-🧩 **Folder Structure**
------------------------
-
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   📦 drone-escape  ├── assets/  │   ├── bg.png  │   ├── ground.png  │   ├── font.ttf  │   ├── sfx/  │   │   ├── flap.wav  │   │   ├── score.wav  │   │   └── dead.wav  │   └── sprites/  │       ├── drone.png  │       ├── powerups/  │       └── obstacles/  ├── sprites/  │   ├── drone.py  │   ├── pipe.py  │   ├── obstacle.py  │   └── power.py  ├── main.py  └── README.md   `
-
-🚀 **How to Run**
------------------
-
-### **1\. Install dependencies**
-
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   pip install pygame   `
-
-### **2\. Run the game**
-
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   python main.py   `
-
 🧠 **Controls**
 ---------------
 
@@ -95,20 +79,6 @@ KeyAction**SPACE**Flap / Jump**SPACE (on Game Over)**Restart
 *   **Pygame**
     
 *   Custom pixel sprites and animations
-    
-
-📌 Roadmap (Optional)
----------------------
-
-*   Add magnet power-up
-    
-*   Add animated wings / more drone frames
-    
-*   Add moving pipes
-    
-*   Add boss obstacle
-    
-*   Add shop system / unlockable drones
     
 
 ❤️ **Credits**

@@ -5,6 +5,8 @@ from sprites.drone import Drone
 from sprites.pipe import Pipe
 from sprites.power import PowerUp
 from sprites.obstacle import Obstacle
+import os 
+
 pg.init()
 pg.mixer.init()
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) 
@@ -25,6 +27,7 @@ class Game:
         self.clock = pg.time.Clock()
         self.fps =60
         self.is_started = False
+        self.hiscore = 0
         # Game Constant Variables
         self.jump_speed = 700
         self.ground_speed= -300
@@ -77,6 +80,7 @@ class Game:
         self.is_flap = True
         self.is_started = False
         self.score = 0
+        self.score_manager()
     
     def setupBgandGround(self):
         # Initialize Background
@@ -103,12 +107,38 @@ class Game:
         text2 = font_medium.render(f"Score: {score}", True, (255, 255, 255))
         rect2 = text2.get_rect(center=(self.screen.get_width()//2, 280))
         self.screen.blit(text2, rect2)
-
-        # Restart instruction
-        text3 = font_medium.render("Press SPACE to Restart", True, (180, 180, 180))
-        rect3 = text3.get_rect(center=(self.screen.get_width()//2, 350))
+        # High score text
+        text3 = font_medium.render(f"High Score: {self.hiscore}", True, (255, 255, 255))
+        rect3 = text3.get_rect(center=(self.screen.get_width()//2, 320))
         self.screen.blit(text3, rect3)
 
+        # Restart instruction
+        text4 = font_medium.render("Press SPACE to Restart", True, (180, 180, 180))
+        rect4 = text4.get_rect(center=(self.screen.get_width()//2, 350))
+        self.screen.blit(text4, rect4)
+
+    def score_manager(self, score=None):
+        self.hiscore = 0
+        if not os.path.exists('hiscore.txt'):
+            with open('hiscore.txt','w') as f:
+                f.write('0')
+        with open('hiscore.txt','r+') as f:
+            try:
+                self.hiscore= int(f.read())
+            except:
+                pass
+        if score is None:
+            return self.hiscore
+        
+        else:
+            with open("hiscore.txt",'r+') as f:
+                try:
+                    self.hiscore = int(f.read())
+                except:
+                    self.hiscore = 0
+                if score > self.hiscore:
+                    f.write(str(score))
+    
     def show_score(self):
         # Score text
         for pipe in self.pipes:
@@ -211,7 +241,8 @@ class Game:
                     
                 # Spawn Pipes
                 if event.type == self.SPAWN_PIPE and not self.game_over:
-                    self.pipe = Pipe(self.screen, self.width+50, random.randint(300,600), self.scale_factor, False)
+                    self.pipe_height = random.randint(200, 600)
+                    self.pipe = Pipe(self.screen, self.width+50, self.pipe_height, self.scale_factor, False)
                     self.pipe_flipped = Pipe(self.screen, self.width+50, self.pipe.rect.y - self.pipe_gap-self.pipe.rect.height, self.scale_factor, True)
                     self.pipes.add(self.pipe)
                     self.pipes.add(self.pipe_flipped)
@@ -230,7 +261,7 @@ class Game:
                 
                 #Obstacle
                 if event.type == self.SPAWN_OBS and not self.game_over:
-                    self.ob = Obstacle(self.screen, random .randint(self.width+50,self.width+300), random.randint(100,300), 0.1)
+                    self.ob = Obstacle(self.screen, random .randint(self.width+50,self.width+300),random.randint(50,600), 0.1)
                     self.all_sprites.add(self.ob)
                     self.obs.add(self.ob)
                 

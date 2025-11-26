@@ -62,7 +62,7 @@ class Game:
         self.screen.blit(title, title_rect)
         
         # Instruction
-        instr = font_medium.render("Press SPACE to Start", True, (255, 255, 255))
+        instr = font_medium.render("Triple SPACE to Start", True, (255, 255, 255))
         instr_rect = instr.get_rect(center=(self.width//2, self.height//2))
         self.screen.blit(instr, instr_rect)
         
@@ -192,7 +192,7 @@ class Game:
                 
         #Update Obstacles
         for ob in self.obs:
-            ob.update(dt,self.ground_speed)
+            ob.update(dt,self.ground_speed*2)
             if ob.rect.right < 0:
                 ob.kill()
                 self.all_sprites.remove(ob)

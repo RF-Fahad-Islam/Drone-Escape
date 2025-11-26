@@ -1,9 +1,10 @@
 import pygame as pg
 import os
 import random
-from sprites.bird import Bird
+from sprites.drone import Drone
 from sprites.pipe import Pipe
-import pygame.mixer
+from sprites.power import PowerUp
+from sprites.obstacle import Obstacle
 pg.init()
 pg.mixer.init()
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) 
@@ -30,23 +31,30 @@ class Game:
         self.gravity = 100
         self.setupBgandGround()
         # Initialize Bird
-        self.bird = Bird(self.screen, self.gravity, self.jump_speed, self.scale_factor)
+        self.drone = Drone(self.screen, self.gravity, self.jump_speed, 0.1)
         self.is_flap = True
-        self.bird_group = pg.sprite.GroupSingle()
-        self.bird_group.add(self.bird)
+        self.drone_group = pg.sprite.GroupSingle()
+        self.powers = pg.sprite.Group()
+        self.obs = pg.sprite.Group()
+        self.drone_group.add(self.drone)
         self.all_sprites = pg.sprite.Group()
-        self.all_sprites.add(self.bird)
+        self.all_sprites.add(self.drone)
         # Initialize Pipes
         self.pipes = pg.sprite.Group()
+        #Timer Events
         self.SPAWN_PIPE = pg.USEREVENT + 1
         self.SPAWN_PIPE_TIMER = 1400
+        self.SPAWN_POWER = pg.USEREVENT + 2 
+        self.SPAWN_OBS = pg.USEREVENT + 3
+        pg.time.set_timer(self.SPAWN_POWER, 3000)
         pg.time.set_timer(self.SPAWN_PIPE, self.SPAWN_PIPE_TIMER) 
+        pg.time.set_timer(self.SPAWN_OBS, 4000) 
         self.game_initial_values()
     
     def welcome_screen(self):
         
         # Game title
-        title = font_big.render("FLAPPY BIRD", True, (255, 255, 0))
+        title = font_big.render("Drone Escape", True, (255, 255, 0))
         title_rect = title.get_rect(center=(self.width//2, self.height//3))
         self.screen.blit(title, title_rect)
         
@@ -60,8 +68,8 @@ class Game:
     
     def game_initial_values(self):
         #To start new game and initialize values
-        self.bird.rect = self.bird.image.get_rect(center=(self.screen.get_width()/10, self.screen.get_height()/2))
-        self.bird.velocity_y = 0
+        self.drone.rect = self.drone.image.get_rect(center=(self.screen.get_width()/10, self.screen.get_height()/2))
+        self.drone.velocity_y = 0
         self.pipes.empty()
         self.pipe_gap = 200
         self.game_over = False
@@ -73,15 +81,15 @@ class Game:
     def setupBgandGround(self):
         # Initialize Background
         bg_img_load = pg.image.load(os.path.join(ASSETS,'bg.png')).convert()
-        self.bg_img = pg.transform.scale_by(bg_img_load, self.scale_factor)
+        self.bg_img = pg.transform.scale(bg_img_load, (600,950))
         self.running = True
         # Initialize Ground
-        self.ground_img1 = pg.transform.scale_by(pg.image.load(os.path.join(ASSETS,'ground.png')).convert(),self.scale_factor)
-        self.ground_img2 = pg.transform.scale_by(pg.image.load(os.path.join(ASSETS,'ground.png')).convert(),self.scale_factor)
+        self.ground_img1 = pg.transform.scale(pg.image.load(os.path.join(ASSETS,'ground.png')).convert_alpha(),(600,250))
+        self.ground_img2 = pg.transform.scale(pg.image.load(os.path.join(ASSETS,'ground.png')).convert_alpha(),(600,250))
         self.ground_rect = self.ground_img1.get_rect()
         self.ground_rect2 = self.ground_img2.get_rect()
         self.ground_rect.x = 0
-        self.ground_rect.y, self.ground_rect2.y = 750,750
+        self.ground_rect.y, self.ground_rect2.y = 740,740
     
     def game_over_screen(self, score):
         self.screen.fill((0, 0, 0))
@@ -101,22 +109,30 @@ class Game:
         rect3 = text3.get_rect(center=(self.screen.get_width()//2, 350))
         self.screen.blit(text3, rect3)
 
-    
     def show_score(self):
         # Score text
-        sc = font_big.render(f"Score: {int(self.score)}", True, (255, 255, 255))
+        for pipe in self.pipes:
+            if pipe.rect.left+5 < self.drone.rect.right and not self.game_over and not pipe.scored:
+                self.score += 0.5  # Increment score by 0.5 for each pipe passed
+                pipe.scored = True
+                self.SPAWN_PIPE_TIMER-=50
+                self.SPAWN_PIPE_TIMER = max(900,self.SPAWN_PIPE_TIMER)
+                pg.time.set_timer(self.SPAWN_PIPE, self.SPAWN_PIPE_TIMER) 
+                point_sound.play()
+                
+        sc = font_big.render(f"        {int(self.score)}", True, (255, 255, 255))
         rect2 = sc.get_rect(topleft=(5,5))
         self.screen.blit(sc, rect2)
     
     def start(self):
         # Start Game Loop
-        pg.display.set_caption("Flappy Bird - By Fahad")
+        pg.display.set_caption("Drone Escape - By Fahad")
         self.gameloop()
     
     def run_ground(self,dt):
             self.ground_rect.x += int(self.ground_speed*dt)
             self.ground_rect2.x = self.ground_rect.right
-            if abs(self.ground_rect.x) > self.screen.get_width():
+            if abs(self.ground_rect.left) > self.screen.get_width():
                 self.ground_rect.x = 0
 
     def reset(self):
@@ -129,9 +145,54 @@ class Game:
         self.screen.blit(self.ground_img1,self.ground_rect)
         self.screen.blit(self.ground_img2,self.ground_rect2)
         
+    def updateEverything(self,dt):
+         # Update Sprites
+        for pipe in self.pipes:
+            pipe.update(dt,self.ground_speed)
+            if pipe.rect.right < 0:
+                pipe.kill()
+                self.all_sprites.remove(pipe)
+                
+        #Update PowerUps
+        for power in self.powers:
+            power.update(dt,self.ground_speed)
+            if power.rect.right < 0:
+                power.kill()
+                self.all_sprites.remove(power)
+                
+        #Update Obstacles
+        for ob in self.obs:
+            ob.update(dt,self.ground_speed)
+            if ob.rect.right < 0:
+                ob.kill()
+                self.all_sprites.remove(ob)
+        
+    def handleCollisions(self):
+        if pg.sprite.spritecollide(self.drone_group.sprite, self.pipes, False):
+            self.gravity = 0
+            self.ground_speed = 0
+            self.is_flap = False
+            self.game_over = True
+            hit_sound.play()
+            
+        if pg.sprite.spritecollide(self.drone_group.sprite, self.powers, True):
+            self.score += 5  # Increase score by 5 for collecting power-up
+            point_sound.play()
+
+        if pg.sprite.spritecollide(self.drone_group.sprite, self.obs, False):
+            self.gravity = 0
+            self.ground_speed = 0
+            self.is_flap = False
+            self.game_over = True
+            hit_sound.play()
+        
+        if (self.drone.rect.bottom >= 740 or self.drone.rect.top <= 0) and not self.game_over:
+            self.game_over = True
+            hit_sound.play()
+    
     def gameloop(self):
         while self.running:
-            self.screen.blit(self.bg_img,(0,-200))
+            self.screen.blit(self.bg_img,(0,0))
             dt = self.clock.get_time()/1000
             keys = pg.key.get_pressed()
             if not self.is_started:
@@ -156,55 +217,49 @@ class Game:
                     self.pipes.add(self.pipe_flipped)
                     # add the two pipe sprites directly to the all_sprites group
                     self.all_sprites.add(self.pipe, self.pipe_flipped)
-                    self.pipe_gap-=10
+                    self.pipe_gap-=5
                     self.pipe_gap = max(self.min_pipe_gap,self.pipe_gap)
                     self.ground_speed -= 10
+                    
+                
+                #Power Up
+                if event.type == self.SPAWN_POWER and not self.game_over:
+                    self.power = PowerUp(self.screen, random .randint(self.width+50,self.width+300), random.randint(100,500), 0.25, random.choice(["speed","shield"]))
+                    self.all_sprites.add(self.power)
+                    self.powers.add(self.power)
+                
+                #Obstacle
+                if event.type == self.SPAWN_OBS and not self.game_over:
+                    self.ob = Obstacle(self.screen, random .randint(self.width+50,self.width+300), random.randint(100,300), 0.1)
+                    self.all_sprites.add(self.ob)
+                    self.obs.add(self.ob)
+                
                 if event.type == pg.KEYDOWN and event.key == pg.K_SPACE and not self.game_over and self.is_flap:
                     flap_sound.play()
-                    self.bird.flap(dt)
+                    self.drone.flap(dt)
                     
             if self.game_over and self.is_started:
                 pg.time.set_timer(self.SPAWN_PIPE, 0)
                 self.game_over_screen(score=self.score)
                 pg.display.update()
                 keys = pg.key.get_pressed()
+                #New Game on Space Press
                 if keys[pg.K_SPACE]:
                     self.running = False
                     Game().start()
                     
             elif not self.game_over and self.is_started:
                 
-                for pipe in self.pipes:
-                    pipe.update(dt,self.ground_speed)
-                    if pipe.rect.right < 0:
-                        pipe.kill()
-                        self.all_sprites.remove(pipe)
-                    
-                if pg.sprite.spritecollide(self.bird_group.sprite, self.pipes, False):
-                    self.gravity = 0
-                    self.ground_speed = 0
-                    self.is_flap = False
-                    self.game_over = True
-                    hit_sound.play()
-
-                if (self.bird.rect.bottom >= 750 or self.bird.rect.top <= 0) and not self.game_over:
-                    self.game_over = True
-                    hit_sound.play()
+                self.updateEverything(dt)
                 
-                for pipe in self.pipes:
-                    if pipe.rect.left+5 < self.bird.rect.right and not self.game_over and not pipe.scored:
-                        self.score += 0.5  # Increment score by 0.5 for each pipe passed
-                        pipe.scored = True
-                        self.SPAWN_PIPE_TIMER-=100
-                        self.SPAWN_PIPE_TIMER = max(900,self.SPAWN_PIPE_TIMER)
-                        
-                        pg.time.set_timer(self.SPAWN_PIPE, self.SPAWN_PIPE_TIMER) 
-                        point_sound.play()
+                self.handleCollisions()
+                
+
                         
                 self.run_ground(dt)
-                self.bird.run(dt)
-                self.drawAll() 
+                self.drone.run(dt)
                 self.show_score()
+                self.drawAll() 
                 pg.display.update()
                 self.clock.tick(self.fps)
             

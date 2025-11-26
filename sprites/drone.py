@@ -1,16 +1,16 @@
 import pygame as pg
 
-class Bird(pg.sprite.Sprite):
+class Drone(pg.sprite.Sprite):
     def __init__(self,screen,gravity,jump_speed,scale_factor):
-        bird_img1 = pg.image.load('assets/birddown.png').convert_alpha()
-        bird_img2 = pg.image.load('assets/birdup.png').convert_alpha()
+        drone_img1 = pg.image.load('assets/dronedown.png').convert_alpha()
+        drone_img2 = pg.image.load('assets/droneup.png').convert_alpha()
         super().__init__()
-        # Initialize Bird properties
+        # Initialize drone properties
         self.gravity = gravity
         self.velocity_y = 0
         self.scale_factor = scale_factor
         self.jump_speed = jump_speed
-        self.img_list = [pg.transform.scale_by(bird_img1, self.scale_factor),pg.transform.scale_by(bird_img2, self.scale_factor)]
+        self.img_list = [pg.transform.scale_by(drone_img1, self.scale_factor),pg.transform.scale_by(drone_img2, self.scale_factor)]
         self.img_init = 0
         self.image = self.img_list[self.img_init]
         self.rect = self.image.get_rect(center=(screen.get_width()/10, screen.get_height()/2))
@@ -24,10 +24,10 @@ class Bird(pg.sprite.Sprite):
             self.image = self.img_list[self.img_init]
         
     def run(self,dt):
-        # Bird Animation
+        # drone Animation
         self.playAnimation() 
             
-        # Bird Movement
+        # drone Movement
         self.apply_gravity(dt)
         if self.rect.bottom >= 750:
             self.rect.y = 750 - self.rect.height

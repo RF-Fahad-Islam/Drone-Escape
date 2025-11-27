@@ -34,11 +34,13 @@ class Game:
         self.fps =60
         self.is_started = False
         self.hiscore = 0
+        self.is_sheilded = False
+        self.shield_track = 0
         self.collision_skip = 0
         self.tracker =0
         self.dash_time = 2000
         # Game Constant Variables
-        self.jump_speed = 700
+        self.jump_speed = 600
         self.ground_speed= -300
         self.gravity = 100
         self.setupBgandGround()
@@ -58,7 +60,7 @@ class Game:
         self.SPAWN_PIPE_TIMER = 1400
         self.SPAWN_POWER = pg.USEREVENT + 2 
         self.SPAWN_OBS = pg.USEREVENT + 3
-        pg.time.set_timer(self.SPAWN_POWER, random.randint(2000,10000))
+        pg.time.set_timer(self.SPAWN_POWER, random.randint(2000,7000))
         pg.time.set_timer(self.SPAWN_PIPE, self.SPAWN_PIPE_TIMER) 
         pg.time.set_timer(self.SPAWN_OBS, random.randint(2000,7000)) 
         self.game_initial_values()
@@ -102,6 +104,7 @@ class Game:
         # Initialize Ground
         self.ground_img1 = pg.transform.scale(pg.image.load(os.path.join(ASSETS,'ground.png')).convert_alpha(),(600,250))
         self.ground_img2 = pg.transform.scale(pg.image.load(os.path.join(ASSETS,'ground.png')).convert_alpha(),(600,250))
+        self.shield_img = pg.transform.scale(pg.image.load(os.path.join(ASSETS,'powerup_shield.png')).convert_alpha(),(50,50))
         self.ground_rect = self.ground_img1.get_rect()
         self.ground_rect2 = self.ground_img2.get_rect()
         self.ground_rect.x = 0
@@ -153,7 +156,7 @@ class Game:
                 if score > self.hiscore:
                     f.write(str(score))
     
-    def show_score(self):
+    def count_score(self):
         # Score text
         for pipe in self.pipes:
             if pipe.rect.left+5 < self.drone.rect.right and not self.game_over and not pipe.scored:
@@ -163,10 +166,7 @@ class Game:
                 self.SPAWN_PIPE_TIMER = max(900,self.SPAWN_PIPE_TIMER)
                 pg.time.set_timer(self.SPAWN_PIPE, self.SPAWN_PIPE_TIMER) 
                 point_sound.play()
-                
-        sc = font_big.render(f"{int(self.score)}", True, (255, 255, 255))
-        rect2 = sc.get_rect(topright=(self.width-10,40))
-        self.screen.blit(sc, rect2)
+
     
     def start(self):
         # Start Game Loop
@@ -188,8 +188,18 @@ class Game:
         self.all_sprites.draw(self.screen)
         self.screen.blit(self.ground_img1,self.ground_rect)
         self.screen.blit(self.ground_img2,self.ground_rect2)
-        t = font_medium.render(f")x{self.collision_skip}", True, (255, 255, 255))
-        self.screen.blit(t,(self.width-50,10))
+        sc = font_big.render(f"{int(self.score)}", True, (255, 255, 255))
+        rect2 = sc.get_rect(topright=(self.width-10,40))
+        sh =font_medium.render(f"Hi: {self.hiscore}", True, (255, 255, 255))
+        rect3 = sh.get_rect(topleft=(10,10))
+        s = font_big.render(f"{'()' if self.is_sheilded else ''}", True, (255, 255, 255))
+        rect1 = s.get_rect(center=(self.width//2,50))
+        self.screen.blit(s, rect1)
+        self.screen.blit(sh, rect3)
+        self.screen.blit(sc, rect2)
+        # t = font_medium.render(f")x{self.collision_skip}", True, (255, 255, 255))
+        # self.screen.blit(t,(self.width-50,10))
+        
     def updateEverything(self,dt):
          # Update Sprites
         for pipe in self.pipes:
@@ -213,24 +223,20 @@ class Game:
                 self.all_sprites.remove(ob)
         
     def handleCollisions(self):
-        if pg.sprite.spritecollide(self.drone_group.sprite, self.pipes, False):
-            if self.collision_skip>0:
-                self.collision_skip -= 1    
-                return
+        if pg.sprite.spritecollide(self.drone_group.sprite, self.pipes, False) and not self.is_sheilded:
             self.gravity = 0
             self.ground_speed = 0
             self.is_flap = False
             self.game_over = True
-            self.collision_skip = 0
-            hit_sound.play()
             
         hits = pg.sprite.spritecollide(self.drone_group.sprite, self.powers, True) 
-        if hits and self.collision_skip==0:
+        if hits:
             for power in hits:
                 if power.type == "speed":
                     self.score += 5  # Increase score by 5 for collecting power-up
                 elif power.type == "shield":
-                    self.collision_skip = 1
+                        self.is_sheilded = True
+                        self.shield_track = 0
             
             powerup_sound.play()
 
@@ -258,6 +264,13 @@ class Game:
             self.screen.blit(self.bg_img,(0,0))
             dt = self.clock.get_time()/1000
             keys = pg.key.get_pressed()
+            
+            if self.is_sheilded:
+                self.shield_track += 1
+                if self.shield_track > 300:
+                    self.is_sheilded = False
+                    self.shield_track = 0
+            
             if not self.is_started:
                 self.gravity = 0
                 self.welcome_screen()
@@ -333,7 +346,7 @@ class Game:
                 self.run_ground(dt)
                 self.drone.run(dt)
                 self.drawAll() 
-                self.show_score()
+                self.count_score()
                 pg.display.update()
                 self.clock.tick(self.fps)
             

@@ -2,6 +2,9 @@
 ====================
 
 A fast-paced Flappy-Bird--style arcade game built with **Python + Pygame**, featuring a flying drone, dynamic obstacles, power-ups, and increasing difficulty.
+<img width="588" height="378" alt="image" src="https://github.com/user-attachments/assets/cb1e6665-419d-49dd-8b55-6c4f082a6fcc" />
+
+
 
 🎮 **About the Game**
 ---------------------
@@ -71,7 +74,7 @@ Your goal: **Fly as far as you can and get the highest score!**
 🧩 **Folder Structure**
 -----------------------
 
-`📦 drone-escape
+📦 drone-escape
 ├── assets/
 │   ├── bg.png
 │   ├── ground.png
@@ -90,7 +93,7 @@ Your goal: **Fly as far as you can and get the highest score!**
 │   ├── obstacle.py
 │   └── power.py
 ├── main.py
-└── README.md`
+└── README.md
 
 * * * * *
 

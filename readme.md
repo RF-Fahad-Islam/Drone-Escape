@@ -6,9 +6,6 @@ A fast-paced Flappy-Bird--style arcade game built with **Python + Pygame**, feat
 ### Demo
 <img width="588" height="378" alt="image" src="https://github.com/user-attachments/assets/cb1e6665-419d-49dd-8b55-6c4f082a6fcc" />
 
-Uploading game_demo (1).mp4…
-
-
 🎮 **About the Game**
 ---------------------
 

@@ -13,12 +13,18 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS = os.path.join(SCRIPT_DIR, 'assets')
 flap_sound = pg.mixer.Sound(os.path.join(ASSETS, "sfx/flap.wav"))
 point_sound = pg.mixer.Sound(os.path.join(ASSETS, "sfx/score.wav"))
+powerup_sound = pg.mixer.Sound(os.path.join(ASSETS, "sfx/powerup.wav"))
+dash_sound = pg.mixer.Sound(os.path.join(ASSETS, "sfx/dash.ogg"))
+bgm = pg.mixer.Sound(os.path.join(ASSETS, "sfx/bgm.mp3"))
 hit_sound = pg.mixer.Sound(os.path.join(ASSETS, "sfx/dead.wav"))
 font_big = pg.font.Font(os.path.join(ASSETS,'font.ttf'), 50)
 font_medium = pg.font.Font(os.path.join(ASSETS,'font.ttf'), 20)
 
 class Game:
     def __init__(self):
+        #MUSIC
+        bgm.play(loops=-1)
+        bgm.set_volume(0.3)
         # Initialize Screen
         self.width =600
         self.height = 950
@@ -29,6 +35,8 @@ class Game:
         self.is_started = False
         self.hiscore = 0
         self.collision_skip = 0
+        self.tracker =0
+        self.dash_time = 2000
         # Game Constant Variables
         self.jump_speed = 700
         self.ground_speed= -300
@@ -64,8 +72,11 @@ class Game:
         
         # Instruction
         instr = font_medium.render("Triple SPACE to Start", True, (255, 255, 255))
-        instr_rect = instr.get_rect(center=(self.width//2, self.height//2))
+        instr_rect = instr.get_rect(center=(self.width//2, self.height//2.5))
         self.screen.blit(instr, instr_rect)
+        instr2 = font_medium.render("Press X to Dash", True, (255, 255, 255))
+        instr2_rect = instr2.get_rect(center=(self.width//2, self.height//2.2))
+        self.screen.blit(instr2, instr2_rect)
         
         pg.display.update()
 
@@ -98,7 +109,7 @@ class Game:
     
     def game_over_screen(self, score):
         self.screen.fill((0, 0, 0))
-
+        bgm.stop()
         # Main "GAME OVER" title
         text1 = font_big.render("GAME OVER", True, (255, 50, 50))
         rect1 = text1.get_rect(center=(self.screen.get_width()//2, 200))
@@ -221,7 +232,7 @@ class Game:
                 elif power.type == "shield":
                     self.collision_skip = 1
             
-            point_sound.play()
+            powerup_sound.play()
 
         if pg.sprite.spritecollide(self.drone_group.sprite, self.obs, False):
             if self.collision_skip>0:
@@ -254,7 +265,7 @@ class Game:
                     self.is_started = True
             else:
                 self.gravity = 100
-            # Event Handling
+            # !Event Handling
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.running = False
@@ -287,9 +298,19 @@ class Game:
                     self.all_sprites.add(self.ob)
                     self.obs.add(self.ob)
                 
-                if event.type == pg.KEYDOWN and event.key == pg.K_SPACE and not self.game_over and self.is_flap:
+                if event.type == pg.KEYDOWN and (event.key == pg.K_SPACE or keys[pg.K_UP]) and not self.game_over and self.is_flap:
                     flap_sound.play()
                     self.drone.flap(dt)
+                
+                #Dash
+                if event.type == pg.KEYDOWN and event.key == (pg.K_RIGHT or event.key == pg.K_x) and not self.game_over and self.tracker>150:
+                    dash_sound.play()
+                    self.ground_speed = -1000
+                else:
+                    self.ground_speed = -300
+                    
+            self.tracker+=1
+                    
                     
             if self.game_over and self.is_started:
                 pg.time.set_timer(self.SPAWN_PIPE, 0)

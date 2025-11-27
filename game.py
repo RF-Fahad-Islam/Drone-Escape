@@ -3,7 +3,7 @@ import os
 import random
 from sprites.drone import Drone
 from sprites.pipe import Pipe
-from power import PowerUp
+from sprites.power import PowerUp
 from sprites.obstacle import Obstacle
 import os 
 

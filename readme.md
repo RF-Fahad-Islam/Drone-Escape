@@ -4,6 +4,7 @@
 A fast-paced Flappy-Bird--style arcade game built with **Python + Pygame**, featuring a flying drone, dynamic obstacles, power-ups, and increasing difficulty.
 
 ### Demo
+
 <img width="588" height="378" alt="image" src="https://github.com/user-attachments/assets/cb1e6665-419d-49dd-8b55-6c4f082a6fcc" />
 
 Uploading game_demo (1).mp4…
@@ -84,6 +85,8 @@ Your goal: **Fly as far as you can and get the highest score!**
 ### **2. Run the game**
 
 `python game.py`
+
+## **Or run from the main.exe in dist folder**
 
 * * * * *
 
